@@ -19,6 +19,9 @@ calc_folder = strcat('C:\Users\Owner\OneDrive\Desktop\Stoll Fellowship Code\', E
 filenames = dir(fullfile(calc_folder,'*mat'));
 total_num = numel(filenames);
 
+seg_folder = strcat('C:\Users\Owner\OneDrive\Desktop\Stoll Fellowship Code\', ExpID_,'_outputfolder_seg');
+filenames_seg = dir(fullfile(seg_folder,'*mat')); 
+
 num_clicks = 0; % Initialize parameter to keep track of the total number of times user has clicked
 num_clicks_array_a = [];
 num_clicks_array_m = [];
@@ -29,13 +32,14 @@ cr_m = 0;
 g = 0; % Initialize numbering for collective invasions across tumors
 a = 0; % Initialize numbering for amoeboid invasions across tumors
 m = 0; % Initialize numbering for mesenchymal invasions across tumors 
-for m = 1:total_num
-   f = load(fullfile(calc_folder, filenames(m).name)); 
+for q = 1:total_num
+   seg = load(fullfile(seg_folder, filenames_seg(q).name));
+   f = load(fullfile(calc_folder, filenames(q).name)); 
    % Find the directory separators
-    str = strcat(calc_folder, filenames(m).name);
+    str = strcat(calc_folder, filenames(q).name);
     %Extract tumor number
     slashlocations = regexp(str, '_');
-    substr = extractAfter(str, slashlocations(2)+6);
+    substr = extractAfter(str, slashlocations(2)+7);
     tumor_num = extractBefore(substr, 2);
     % Extract the day 
     substr = extractAfter(str, slashlocations(3)+1);
@@ -46,38 +50,19 @@ for m = 1:total_num
    Width_tumor_core = f. Width_tumor_core;
    individual_invasion_sum = f. individual_invasion_sum;
    total_tumor_area = f. total_tumor_area;
+   
+   Periphery = seg. Periphery;
+   Max_area_thresh_BW = seg. Max_area_thresh_BW;
+   Total_Tumor = seg. Total_Tumor;
+   distance_to_cav = seg. distance_to_cav; 
+   editedMask_cont = seg. editedMask_cont;
+   Image = seg.Image;
+   Max_area = seg. Max_area; 
+   Max_xcor_cav = seg. Max_xcor_cav;
+   cavity_BW = seg. cavity_BW;
 
 Invasion_L = bwlabel(Invasions);
 Invasion_L_C = bwlabel(Invasions); % Important for cropping images later in selection portion of code
-%imshow(label2rgb(BW_active_contour_L));
-stats_collective_invasions = regionprops(logical(Invasion_L),'Area');
-num = length(stats_collective_invasions);
-collective_area_array = [];
-collective_area_arr = [];
-for i=1:num
-        s = regionprops(logical(Invasion_L), 'Area');
-        areas = cat(1,s.Area);
-        %Concatenate last value of centroids to the end of centroids_arr array (insert as new row to the bottom). 
-        collective_area_arr = [collective_area_array; areas];
-end
-
-collective_invasion_area = sum(collective_area_arr);
-
-Invasion_mask = boundarymask(Invasions);
-imshow(labeloverlay(Image1_adjust1,Invasion_mask, 'Transparency',0));%generates 
-
-%Stats for tumor core of masked image
-stats_tumor_core = regionprops(logical(Tumor_coreBW_Mask), 'Area');
-%Tumor Core outline
-Tumor_coreBW_Bound = boundarymask(Tumor_coreBW_Mask);
-imshow(Tumor_coreBW_Bound);
-
-total_fraction_invaded = 1 -((stats_tumor_core.Area)/(stats_Max_Area_thresh.Area));
-
-BW_active_contour_L2 = bwlabel(Tumor_coreBW_Mask);% Regionprops to extract information from the tumor core
-%imshow(label2rgb(BW_active_contour_L));
-stats_core = regionprops(logical(BW_active_contour_L2),'Centroid', 'Area', 'Perimeter', 'MajorAxisLength', 'MinorAxisLength');
-table_core = struct2table(stats_core);
 
 %Initialize cell arrays to store data for selected invasions
 index_collective_invasions = {};
@@ -142,8 +127,8 @@ for s = 1:num_clicks_A
     cr_a = cr_a + 1; % index for cropped amoeboid invasions cells
     num_clicks_array_a(a) = a;
 if num_clicks_A == 0
-    FileName_output = fullfile('C:\Users\Owner\OneDrive\Desktop\Stoll Fellowship Code\Needle Tumor Amoeboid Invasions',sprintf('%d.tif',n));
-    imwrite(labeled_Image,FileName_output);% writes image to amoeboid invasions folder
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, '.mat');
+    save(string(savename),'labeled_Image');
     
 else
     [L, num_Obj] = bwlabel(Classify_Invasions);
@@ -179,9 +164,11 @@ else
     cell_image = boundarymask(labeled_Image_C);
     %imshow(cell_image_cropped_b);
     
-    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, '.mat');
-    save(string(savename),'stats_A_invasion_cell','labeled_Image', 'cell_image_cropped_amoeboid');
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'amoeboid',num2str(num_clicks_array_a(cr_a)), '.mat');
+    save(string(savename),'stats_A_invasion_cell', 'cell_image_cropped_amoeboid');
     
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'invasions_a','.mat');
+    save(string(savename),'labeled_Image');
 end
 end
 
@@ -225,8 +212,8 @@ for t = 1:num_clicks_M
     cr_m = cr_m + 1; % index for analysis of selected cells
     num_clicks_array_m(m) = m;
 if num_clicks_M == 0
-    FileName_output = fullfile('C:\Users\Owner\OneDrive\Desktop\Stoll Fellowship Code\Needle Tumor Mesenchymal Invasions',sprintf('%d.tif',n));
-    imwrite(labeled_Image,FileName_output);% writes image to amoeboid invasions folder
+     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'invasions_m', '.mat');
+    save(string(savename),'labeled_Image');
     
 else
     [L_M, num_Obj_M] = bwlabel(Classify_Invasions);
@@ -262,8 +249,11 @@ else
     cell_image = boundarymask(labeled_Image_C);
     %imshow(cell_image_cropped_b);
     
-    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, '.mat');
-    save(string(savename),'stats_M_invasion_cell','labeled_Image', 'cell_image_cropped_M');
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'invasions_m', '.mat');
+    save(string(savename),'labeled_Image');
+    
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'mesenchymal',num2str(num_clicks_array_m(cr_m)), '.mat');
+    save(string(savename),'stats_M_invasion_cell', 'cell_image_cropped_M');
    
 end
 end
@@ -309,8 +299,8 @@ for t = 1:num_clicks_C
     cr_c = cr_c + 1; % index for analysis of selected cells
     num_clicks_array_c(cr_c) = cr_c;
 if num_clicks_C == 0
-    FileName_output = fullfile('C:\Users\Owner\OneDrive\Desktop\Stoll Fellowship Code\Needle Tumor Collective Invasions',sprintf('%d.tif',n));
-    imwrite(Invasion_L,FileName_output);% writes image to amoeboid invasions folder
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'.mat');
+    save(string(savename),'Invasion_L');
     
 else
     [L_C, num_Obj_C] = bwlabel(Invasions);
@@ -343,8 +333,11 @@ else
     % get outline of cropped image
     cell_image_cropped_b = boundarymask(cell_image_cropped_C);
     
-    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, '.mat');
-    save(string(savename),'stats_C_invasion_cell','labeled_Image', 'cell_image_cropped_C');
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'collective',num2str(num_clicks_array_c(cr_c)),'.mat');
+    save(string(savename),'stats_C_invasion_cell','cell_image_cropped_C');
+    
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'.mat');
+    save(string(savename),'Invasion_L');
    
 end
 end
