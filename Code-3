@@ -23,15 +23,6 @@ seg_folder = strcat('C:\Users\Owner\OneDrive\Desktop\Stoll Fellowship Code\', Ex
 filenames_seg = dir(fullfile(seg_folder,'*mat')); 
 
 num_clicks = 0; % Initialize parameter to keep track of the total number of times user has clicked
-num_clicks_array_a = [];
-num_clicks_array_m = [];
-num_clicks_array_c = []; 
-cr_c = 0; % Initialize numbering for index of cropped individual invasions
-cr_a = 0;
-cr_m = 0;
-g = 0; % Initialize numbering for collective invasions across tumors
-a = 0; % Initialize numbering for amoeboid invasions across tumors
-m = 0; % Initialize numbering for mesenchymal invasions across tumors 
 for q = 1:total_num
    seg = load(fullfile(seg_folder, filenames_seg(q).name));
    f = load(fullfile(calc_folder, filenames(q).name)); 
@@ -89,6 +80,8 @@ uiwait(msgbox({'Please click on amoeboid invasions'; 'Please click return when y
 imshow(Subtract_C);
 count = 500;
 num_clicks_A = 0;
+cr_a = 0;
+a = 0;
 str = strings(1,500);
 for i = 1:500
     str(1, i) = i;
@@ -103,16 +96,11 @@ end
 % up number of times user clicked
 num_clicks = num_clicks + 1;
 num_clicks_A = num_clicks_A +1;
-a = a + 1; % Keep track of index of amoeboid cell invasions
+a = a + 1;
 % put x over selected cell
 hold on
-%text = convertStringsToChars(str(1, num_clicks));
 labeled_Image = insertText(labeled_Image, [yCenter, xCenter], str(1, a), 'FontSize', 30, 'BoxColor', 'yellow', 'BoxOpacity', 0.5, 'TextColor', 'black');
-%text(yCenter, xCenter, str(1, num_clicks),'Color','red','FontSize',10);
-%labeled_Image = labelimg(Classify_Invasions_L, text);
 imshow(labeled_Image); title('Labeled image')
-%plot(yCenter, xCenter);
-%gtext(str(1,num_clicks),'Color','red','FontSize',10);
 % up the count
 count = count + 1;
 %Save coordinates into arrays
@@ -125,7 +113,6 @@ end
 %num_clicks = num_clicks + num_clicks_A;
 for s = 1:num_clicks_A
     cr_a = cr_a + 1; % index for cropped amoeboid invasions cells
-    num_clicks_array_a(a) = a;
 if num_clicks_A == 0
     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, '.mat');
     save(string(savename),'labeled_Image');
@@ -164,7 +151,7 @@ else
     cell_image = boundarymask(labeled_Image_C);
     %imshow(cell_image_cropped_b);
     
-    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'amoeboid',num2str(num_clicks_array_a(cr_a)), '.mat');
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'amoeboid',num2str((cr_a)), '.mat');
     save(string(savename),'stats_A_invasion_cell', 'cell_image_cropped_amoeboid');
     
     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'invasions_a','.mat');
@@ -181,6 +168,8 @@ Y_M_cor = [];
 count = 500;
 %num_clicks = 0;
 num_clicks_M = 0;% Initialize number of clicks for mesenchymal invasions
+cr_m = 0;
+m = 0;
 str_M = strings(1,500);
 for i = 1:500
     str_M(1, i) = i;
@@ -210,7 +199,6 @@ end
 
 for t = 1:num_clicks_M
     cr_m = cr_m + 1; % index for analysis of selected cells
-    num_clicks_array_m(m) = m;
 if num_clicks_M == 0
      savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'invasions_m', '.mat');
     save(string(savename),'labeled_Image');
@@ -252,7 +240,7 @@ else
     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'invasions_m', '.mat');
     save(string(savename),'labeled_Image');
     
-    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'mesenchymal',num2str(num_clicks_array_m(cr_m)), '.mat');
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'mesenchymal',num2str((cr_m)), '.mat');
     save(string(savename),'stats_M_invasion_cell', 'cell_image_cropped_M');
    
 end
@@ -265,6 +253,8 @@ dlgtitle = 'Classify Collective Invasions';
 uiwait(msgbox({'Please click on collective invasions'; 'Please click return when you are finished selecting invasions'},dlgtitle));
 count = 500;
 num_clicks_C = 0; % Keep track of how many times user has clicked
+cr_c = 0;
+g = 0;
 num_clicks = 0;
 figure, imshow(Invasion_L);
 
@@ -297,7 +287,6 @@ end
 
 for t = 1:num_clicks_C
     cr_c = cr_c + 1; % index for analysis of selected cells
-    num_clicks_array_c(cr_c) = cr_c;
 if num_clicks_C == 0
     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'.mat');
     save(string(savename),'Invasion_L');
