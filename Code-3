@@ -1,9 +1,9 @@
 %Code 3 
 % This code takes the calculations from the previous code and performs the
 % selections of the invasions. This code will contain the classification
-% and machine learning 
+% and machine learning. This performs the manual identification.
 
-clear var 
+clearvars 
 outputfolder = uigetdir('C:\Users\Owner\OneDrive\Desktop\Stoll Fellowship Code\','Where would you like to store the converted data?');% Enter output folder
 prompt = 'What name handle would you like to use? (s(number).mat will be added automatically)\\n (enter inside single quotes)\\n';
 dlgtitle = 'Name Handle';
@@ -23,6 +23,7 @@ seg_folder = strcat('C:\Users\Owner\OneDrive\Desktop\Stoll Fellowship Code\', Ex
 filenames_seg = dir(fullfile(seg_folder,'*mat')); 
 
 num_clicks = 0; % Initialize parameter to keep track of the total number of times user has clicked
+
 for q = 1:total_num
    seg = load(fullfile(seg_folder, filenames_seg(q).name));
    f = load(fullfile(calc_folder, filenames(q).name)); 
@@ -41,6 +42,9 @@ for q = 1:total_num
    Width_tumor_core = f. Width_tumor_core;
    individual_invasion_sum = f. individual_invasion_sum;
    total_tumor_area = f. total_tumor_area;
+   total_fraction_invaded = f. total_fraction_invaded; 
+   collective_invasion_area = f. collective_invasion_area;
+   table_core = f. table_core;
    
    Periphery = seg. Periphery;
    Max_area_thresh_BW = seg. Max_area_thresh_BW;
@@ -64,7 +68,7 @@ index_mesenchymal_invasions = {};
 X_A_cor = [];
 Y_A_cor = [];
 Subtract_C = imsubtract(editedMask_cont, Max_area);
-%imshow(Subtract_C);
+imshow(Subtract_C);
 Classify_Invasions = bwareaopen(Subtract_C, 300);
 Classify_Invasions_L = bwlabel(Classify_Invasions);
 labeled_Image = Classify_Invasions_L;
@@ -77,7 +81,7 @@ num_objects = Dim(1,1);
 if num_objects > 0
 dlgtitle = 'Classify Individual Invasions';
 uiwait(msgbox({'Please click on amoeboid invasions'; 'Please click return when you are finished selecting invasions'},dlgtitle));
-imshow(Subtract_C);
+imshow(Classify_Invasions);
 count = 500;
 num_clicks_A = 0;
 cr_a = 0;
@@ -322,13 +326,47 @@ else
     % get outline of cropped image
     cell_image_cropped_b = boundarymask(cell_image_cropped_C);
     
-    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'collective',num2str(num_clicks_array_c(cr_c)),'.mat');
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'collective',num2str((cr_c)),'.mat');
     save(string(savename),'stats_C_invasion_cell','cell_image_cropped_C');
     
     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'.mat');
     save(string(savename),'Invasion_L');
+    
+    tumor_number = str2num(tumor_num);
+    day_number = str2num(day_num);
+    
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'table.mat');
+    Tablename = table( distance_to_cav, Width_tumor_core, individual_invasion_sum, collective_invasion_area, total_tumor_area, total_fraction_invaded, tumor_number, day_number);
+    save(string(savename), 'Tablename');
+    
+end
+end
    
-end
-end
 
 end
+
+%Initialize Table which will hold all of the variables for all of the
+%tumors
+Table_all_stats = array2table(zeros(1,8));
+Table_all_stats.Properties.VariableNames = {'distance_to_cav' 'Width_tumor_core' 'individual_invasion_sum' 'collective_invasion_area' 'total_tumor_area' 'total_fraction_invaded' 'tumor_number' 'day_number'};
+for b = 1: (total_num)
+    seg = load(fullfile(seg_folder, filenames_seg(b).name));
+   f = load(fullfile(calc_folder, filenames(b).name)); 
+   % Find the directory separators
+    str = strcat(calc_folder, filenames(b).name);
+    %Extract tumor number
+    slashlocations = regexp(str, '_');
+    substr = extractAfter(str, slashlocations(2)+7);
+    tumor_num = extractBefore(substr, 2);
+    % Extract the day 
+    substr = extractAfter(str, slashlocations(3)+1);
+    day_num = extractBefore( substr, 2);
+    foldername = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'table.mat');
+table = load(foldername);
+Tablename_1 = table.Tablename;
+Table_all_stats = vertcat(Tablename_1, Table_all_stats);
+end
+Table_all_stats([total_num+1],:) = [];
+size(Table_all_stats);
+Table_all_stats = sortrows(Table_all_stats, tumor_number);
+
