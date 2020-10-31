@@ -24,6 +24,11 @@ filenames_seg = dir(fullfile(seg_folder,'*mat'));
 
 num_clicks = 0; % Initialize parameter to keep track of the total number of times user has clicked
 
+%Table_A_Invasion_data = array2table(zeros(1,33)); % Initialize Tables to store data for clicked invasions
+%Table_A_Invasion_data.Properties.VariableNames = {'Area' 'Centroid' 'BoundingBox' 'SubarrayIdx' 'MajorAxisLength' 'MinorAxisLength' 'Eccentricity' 'Orientation' 'ConvexHull' 'ConvexImage' 'ConvexArea' 'Circularity' 'Image' 'FilledImage' 'FilledArea' 'EulerNumber' 'Extrema' 'EquivDiameter' 'Solidity' 'Extent' 'PixelIdxList' 'PixelList' 'Perimeter' 'PerimeterOld' 'MaxFeretDiameter' 'MaxFeretAngle' 'MaxFeretCoordinates' 'MinFeretDiameter' 'MinFeretAngle' 'MinFeretCoordinates' 'tumor_number' 'day_number' 'amoeboid_index' };
+%Table_M_Invasion_data = array2table(zeros(1,33));
+%Table_C_Invasion_data = array2table(zeros(1,33));
+
 for q = 1:total_num
    seg = load(fullfile(seg_folder, filenames_seg(q).name));
    f = load(fullfile(calc_folder, filenames(q).name)); 
@@ -110,13 +115,14 @@ count = count + 1;
 %Save coordinates into arrays
 X_A_cor(num_clicks_A) = xCenter;
 Y_A_cor(num_clicks_A) = yCenter;
-%all_A_Y = (yCenter);
-%all_A_X = (xcenter);
+
 end
 
 %num_clicks = num_clicks + num_clicks_A;
 for s = 1:num_clicks_A
     cr_a = cr_a + 1; % index for cropped amoeboid invasions cells
+    % Initialize cell array to store tables for amoeboid invasions
+    region_amoeboid = cell(33,a);
 if num_clicks_A == 0
     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, '.mat');
     save(string(savename),'labeled_Image');
@@ -160,8 +166,42 @@ else
     
     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'invasions_a','.mat');
     save(string(savename),'labeled_Image');
+    
+    
+    tumor_number = str2num(tumor_num);
+    day_number = str2num(day_num);
+    amoeboid_index = cr_a;
+    amoeboid = "amoeboid";
+    Classification = amoeboid;
+    % create a table containing tumor number, day number, and the number of
+    % selected invasion that can be horizontally concatenated to the
+    % Stats_A_Invasion table. This can then be vertically added to the main
+    % table for amoeboid invasion statistics
+    %savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'amoeboid_table',num2str((cr_a)), '.mat');
+    %save(string(savename),'stats_A_invasion_table');
+    %region_amoeboid(cr_a) = stats_A_invasion_cell_tum_day;
+    if s == 1
+        stats_A_invasion_table_data = struct2table(stats_A_invasion, 'AsArray', true);
+        Table_tu_day_Inv = table(tumor_number, day_number, amoeboid_index, Classification);
+        stats_A_invasion_table_first = horzcat(stats_A_invasion_table_data, Table_tu_day_Inv);
+        stats_A_invasion_table = stats_A_invasion_table_first;
+    end
+    
+    if s > 1
+        stats_A_invasion_table_data = struct2table(stats_A_invasion, 'AsArray', true);
+        Table_tu_day_Inv = table(tumor_number, day_number, amoeboid_index, Classification);
+        stats_A_invasion_table_new = horzcat(stats_A_invasion_table_data, Table_tu_day_Inv);
+        stats_A_invasion_table = vertcat(stats_A_invasion_table_new, stats_A_invasion_table); 
+    end
+    
+    %savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'amoeboid_table',num2str((cr_a)), '.mat');
+    %save(string(savename),'stats_A_invasion_table');
+    
 end
 end
+savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'amoeboid_table_all_stats', '.mat');
+save(string(savename),'stats_A_invasion_table');
+    
 
 dlgtitle = 'Classify Invasions';
 uiwait(msgbox({'Please click on mesenchymal invasions'; 'Please click return when you are finished selecting invasions'},dlgtitle));
@@ -244,8 +284,37 @@ else
     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'invasions_m', '.mat');
     save(string(savename),'labeled_Image');
     
-    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'mesenchymal',num2str((cr_m)), '.mat');
+     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'mesenchymal',num2str((cr_m)), '.mat');
     save(string(savename),'stats_M_invasion_cell', 'cell_image_cropped_M');
+    
+    tumor_number = str2num(tumor_num);
+    day_number = str2num(day_num);
+    mesenchymal_index = cr_m;
+    mesenchymal = "mesenchymal";
+    Classification = mesenchymal; 
+    % create a table containing tumor number, day number, and the number of
+    % selected invasion that can be horizontally concatenated to the
+    % Stats_A_Invasion table. This can then be vertically added to the main
+    % table for amoeboid invasion statistics
+    %savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'amoeboid_table',num2str((cr_a)), '.mat');
+    %save(string(savename),'stats_A_invasion_table');
+    %region_amoeboid(cr_a) = stats_A_invasion_cell_tum_day;
+    if t == 1
+        stats_M_invasion_table_data = struct2table(stats_M_invasion, 'AsArray', true);
+        Table_tu_day_Inv = table(tumor_number, day_number, mesenchymal_index, Classification);
+        stats_M_invasion_table_first = horzcat(stats_M_invasion_table_data, Table_tu_day_Inv);
+        stats_M_invasion_table = stats_M_invasion_table_first;
+    end
+    
+    if t > 1
+        stats_M_invasion_table_data = struct2table(stats_M_invasion, 'AsArray', true);
+        Table_tu_day_Inv = table(tumor_number, day_number, mesenchymal_index, Classification);
+        stats_M_invasion_table_new = horzcat(stats_M_invasion_table_data, Table_tu_day_Inv);
+        stats_M_invasion_table = vertcat(stats_M_invasion_table_new, stats_M_invasion_table); 
+    end
+    
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'mesenchymal_table_all_stats', '.mat');
+    save(string(savename),'stats_M_invasion_table')
    
 end
 end
@@ -335,7 +404,33 @@ else
     tumor_number = str2num(tumor_num);
     day_number = str2num(day_num);
     
-    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'table.mat');
+    collective_index = cr_c;
+    % create a table containing tumor number, day number, and the number of
+    % selected invasion that can be horizontally concatenated to the
+    % Stats_A_Invasion table. This can then be vertically added to the main
+    % table for amoeboid invasion statistics
+    %savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'amoeboid_table',num2str((cr_a)), '.mat');
+    %save(string(savename),'stats_A_invasion_table');
+    %region_amoeboid(cr_a) = stats_A_invasion_cell_tum_day;
+    if t == 1
+        stats_C_invasion_table_data = struct2table(stats_C_invasion, 'AsArray', true);
+        Table_tu_day_Inv = table(tumor_number, day_number, collective_index);
+        stats_C_invasion_table_first = horzcat(stats_C_invasion_table_data, Table_tu_day_Inv);
+        stats_C_invasion_table = stats_C_invasion_table_first;
+    end
+    
+    if t > 1
+        stats_C_invasion_table_data = struct2table(stats_C_invasion, 'AsArray', true);
+        Table_tu_day_Inv = table(tumor_number, day_number, collective_index);
+        stats_C_invasion_table_new = horzcat(stats_C_invasion_table_data, Table_tu_day_Inv);
+        stats_C_invasion_table = vertcat(stats_C_invasion_table_new, stats_C_invasion_table); 
+    end
+    
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num, 'collective_table_all_stats', '.mat');
+    save(string(savename),'stats_C_invasion_table')
+   
+    
+    savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'table_all_stats.mat');
     Tablename = table( distance_to_cav, Width_tumor_core, individual_invasion_sum, collective_invasion_area, total_tumor_area, total_fraction_invaded, tumor_number, day_number);
     save(string(savename), 'Tablename');
     
@@ -361,7 +456,7 @@ for b = 1: (total_num)
     % Extract the day 
     substr = extractAfter(str, slashlocations(3)+1);
     day_num = extractBefore( substr, 2);
-    foldername = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'table.mat');
+    foldername = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'table_all_stats.mat');
 table = load(foldername);
 Tablename_1 = table.Tablename;
 Table_all_stats = vertcat(Tablename_1, Table_all_stats);
@@ -369,4 +464,3 @@ end
 Table_all_stats([total_num+1],:) = [];
 size(Table_all_stats);
 Table_all_stats = sortrows(Table_all_stats, tumor_number);
-
