@@ -50,6 +50,7 @@ for q = 1:total_num
    total_fraction_invaded = f. total_fraction_invaded; 
    collective_invasion_area = f. collective_invasion_area;
    table_core = f. table_core;
+   Pythagorean_dist = f. Pythagorean_dist;
    
    Periphery = seg. Periphery;
    Max_area_thresh_BW = seg. Max_area_thresh_BW;
@@ -431,7 +432,7 @@ else
    
     
     savename = strcat(outputfolder,'/',outputname,'tu',tumor_num,'_d', day_num,'table_all_stats.mat');
-    Tablename = table( distance_to_cav, Width_tumor_core, individual_invasion_sum, collective_invasion_area, total_tumor_area, total_fraction_invaded, tumor_number, day_number);
+    Tablename = table( distance_to_cav, Pythagorean_dist, Width_tumor_core, individual_invasion_sum, collective_invasion_area, total_tumor_area, total_fraction_invaded, tumor_number, day_number);
     save(string(savename), 'Tablename');
     
 end
@@ -442,8 +443,8 @@ end
 
 %Initialize Table which will hold all of the variables for all of the
 %tumors
-Table_all_stats = array2table(zeros(1,8));
-Table_all_stats.Properties.VariableNames = {'distance_to_cav' 'Width_tumor_core' 'individual_invasion_sum' 'collective_invasion_area' 'total_tumor_area' 'total_fraction_invaded' 'tumor_number' 'day_number'};
+Table_all_stats = array2table(zeros(1,9));
+Table_all_stats.Properties.VariableNames = {'distance_to_cav' 'Pythagorean_dist' 'Width_tumor_core' 'individual_invasion_sum' 'collective_invasion_area' 'total_tumor_area' 'total_fraction_invaded' 'tumor_number' 'day_number'};
 for b = 1: (total_num)
     seg = load(fullfile(seg_folder, filenames_seg(b).name));
    f = load(fullfile(calc_folder, filenames(b).name)); 
